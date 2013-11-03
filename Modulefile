@@ -1,4 +1,4 @@
-name    'atlasit-bacula'
+name    'desalvo-bacula'
 version '0.1.0'
 source 'https://github.com/desalvo/puppet-bacula'
 author 'desalvo'
