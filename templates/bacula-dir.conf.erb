@@ -1,0 +1,253 @@
+#
+# Default Bacula Director Configuration file
+#
+#  The only thing that MUST be changed is to add one or more
+#   file or directory names in the Include directive of the
+#   FileSet resource.
+#
+#  For Bacula release 5.2.13 (19 February 2013) -- redhat 
+#
+#  You might also want to change the default email address
+#   from root to your address.  See the "mail" and "operator"
+#   directives in the Messages resource.
+#
+
+Director {                            # define myself
+  Name = <%= scope.lookupvar('bacula::server::bacula_dir_name') %>
+  DIRport = <%= scope.lookupvar('bacula::server::bacula_dir_port') %>                # where we listen for UA connections
+  QueryFile = "/etc/bacula/query.sql"
+  WorkingDirectory = "/var/spool/bacula"
+  PidDirectory = "/var/run"
+  Maximum Concurrent Jobs = <%= scope.lookupvar('bacula::server::max_concurrent_jobs') %>
+  Password = "<%= scope.lookupvar('bacula::server::bacula_dir_pass') %>"         # Console password
+  Messages = Daemon
+}
+
+<% if scope.lookupvar('bacula::server::job_defs') -%>
+<% scope.lookupvar('bacula::server::job_defs').sort.each do |@jobname,@jobdef| -%>
+JobDefs {
+  Name = "<%= @jobname %>"
+  Type = Backup
+  Level = <% if @jobdef['level'] %><%= @jobdef['level'] %><% else %>Incremental<% end %>
+  Client = <%= @jobdef['client'] %>
+  FileSet = "<%= @jobdef['fileset'] %>"
+  Schedule = "<%= @jobdef['schedule'] %>"
+  Storage = <%= @jobdef['storage'] %>
+  Messages = <% if @jobdef['messages'] %><%= @jobdef['messages'] %><% else %>Standard<% end %>
+  Pool = <%= @jobdef['pool'] %>
+  Priority = <% if @jobdef['priority'] %><%= @jobdef['priority'] %><% else %>10<% end %>
+  Write Bootstrap = "/var/spool/bacula/%c.bsr"
+}
+
+<% end -%>
+<% end -%>
+<% if scope.lookupvar('bacula::server::job_defs') -%>
+#
+<% scope.lookupvar('bacula::server::job_defs').sort.each do |@jobname,@jobdef| -%>
+Job {
+  Name = "<%= @jobdef['backup'] %>"
+  JobDefs = "<%= @jobname %>"
+  Maximum Concurrent Jobs = <%= scope.lookupvar('bacula::server::max_concurrent_jobs') %>
+}
+
+<% end -%>
+<% end -%>
+# Backup the catalog database (after the nightly save)
+Job {
+  Name = "BackupCatalog"
+  JobDefs = "<%= scope.lookupvar('bacula::server::catalog_job_def') %>"
+  Level = Full
+  FileSet="Catalog"
+  Schedule = "WeeklyCycleAfterBackup"
+  # This creates an ASCII copy of the catalog
+  # Arguments to make_catalog_backup.pl are:
+  #  make_catalog_backup.pl <catalog-name>
+  RunBeforeJob = "/usr/libexec/bacula/make_catalog_backup.pl MyCatalog"
+  # This deletes the copy of the catalog
+  RunAfterJob  = "/usr/libexec/bacula/delete_catalog_backup"
+  Write Bootstrap = "/var/spool/bacula/%n.bsr"
+  Priority = 11                   # run after main backup
+}
+
+<% if scope.lookupvar('bacula::server::job_defs') -%>
+#
+# Standard Restore template, to be changed by Console program
+#  Only one such job is needed for all Jobs/Clients/Storage ...
+#
+<% scope.lookupvar('bacula::server::job_defs').sort.each do |@jobname,@jobdef| -%>
+Job {
+  Name = "<%= @jobdef['restore'] %>"
+  Type = Restore
+  Client= <%= @jobdef['client'] %>
+  FileSet="<%= @jobdef['fileset'] %>"
+  Storage = <%= @jobdef['storage'] %>
+  Pool = <%= @jobdef['pool'] %>
+  Messages = Standard
+  Where = /tmp/bacula-restores
+  Maximum Concurrent Jobs = <%= scope.lookupvar('bacula::server::max_concurrent_jobs') %>
+}
+
+<% end -%>
+<% end -%>
+# List of files to be backed up
+<% scope.lookupvar('bacula::server::filesets').sort.each do |@fileset,@files| -%>
+FileSet {
+  Name = "<%= @fileset %>"
+<% if @files['include'] %>
+  Include {
+    Options {
+      signature = MD5
+      compression = GZIP9
+    }
+<% @files['include'].sort.each do |file| %>
+    File = <%= file %><% end %>
+  }<% end %>
+<% if @files['exclude'] %>
+  Exclude {
+<% @files['exclude'].each do |file| %>
+    File = <%= file %><% end %>
+  }<% end %>
+}
+
+<% end -%>
+#
+# When to do the backups, full backup on first sunday of the month,
+#  differential (i.e. incremental since full) every other sunday,
+#  and incremental backups other days
+Schedule {
+  Name = "WeeklyCycle"
+  Run = Full 1st sun at 23:05
+  Run = Differential 2nd-5th sun at 23:05
+  Run = Incremental mon-sat at 23:05
+}
+
+# This schedule does the catalog. It starts after the WeeklyCycle
+Schedule {
+  Name = "WeeklyCycleAfterBackup"
+  Run = Full sun-sat at 23:10
+}
+
+# This is the backup of the catalog
+FileSet {
+  Name = "Catalog"
+  Include {
+    Options {
+      signature = MD5
+    }
+    File = "/var/spool/bacula/bacula.sql"
+  }
+}
+
+# Client (File Services) to backup
+<% scope.lookupvar('bacula::server::clients').sort.each do |@client_name,@client_data| -%>
+Client {
+  Name = <%= @client_name %>
+  Address = <%= @client_data['address'] %>
+  FDPort = <% if @client_data['port'] %><%= @client_data['port'] %><% else %>9102<% end %>
+  Catalog = MyCatalog
+  Password = "<%= @client_data['password'] %>"         # password for FileDaemon
+  File Retention = <% if @client_data['file_retention'] %><%= @client_data['file_retention'] %><% else %>30 days<% end %>
+  Job Retention = <% if @client_data['job_retention'] %><%= @client_data['job_retention'] %><% else %>6 months<% end %>
+  AutoPrune = yes                     # Prune expired Jobs/Files
+  Maximum Concurrent Jobs = <%= scope.lookupvar('bacula::server::max_concurrent_jobs') %>
+}
+
+<% end -%>
+# Definition of the storage devices
+<% scope.lookupvar('bacula::server::storage').sort.each do |@storage_name,@storage_data| -%>
+Storage {
+  Name = <%= @storage_name %>
+  Address = <%= @storage_data['address'] %>
+  SDPort = <% if @storage_data['port'] %><%= @storage_data['port'] %><% else %>9103<% end %>
+  Password = "<%= @storage_data['password'] %>"
+  Device = <%= @storage_data['device'] %>
+  Media Type = <% if @storage_data['media_type'] %><%= @storage_data['media_type'] %><% else %>File<% end %>
+  Maximum Concurrent Jobs = <%= scope.lookupvar('bacula::server::max_concurrent_jobs') %>
+}
+
+<% end -%>
+# Generic catalog service
+Catalog {
+  Name = MyCatalog
+<% if scope.lookupvar('bacula::server::dbi_mysql') -%>
+  dbdriver = "dbi:mysql"; dbaddress = <% if scope.lookupvar('bacula::server::db_host') %><%= scope.lookupvar('bacula::server::db_host') %><% else %>127.0.0.1<% end %>; dbname = "<%= scope.lookupvar('bacula::server::bacula_db_name') %>"; dbuser = "<%= scope.lookupvar('bacula::server::bacula_db_user') %>"; dbpassword = "<%= scope.lookupvar('bacula::server::bacula_db_pass') %>"
+<% elsif scope.lookupvar('bacula::server::dbi_postgresql') -%>
+  dbdriver = "dbi:postgresql"; dbaddress = <% if scope.lookupvar('bacula::server::db_host') %><%= scope.lookupvar('bacula::server::db_host') %><% else %>127.0.0.1<% end %>; dbname = "<%= scope.lookupvar('bacula::server::bacula_db_name') %>"; dbuser = "<%= scope.lookupvar('bacula::server::bacula_db_user') %>"; dbpassword = "<%= scope.lookupvar('bacula::server::bacula_db_pass') %>"
+<% else -%>
+  dbname = "<%= scope.lookupvar('bacula::server::bacula_db_name') %>"; dbuser = "<%= scope.lookupvar('bacula::server::bacula_db_user') %>"; dbpassword = "<%= scope.lookupvar('bacula::server::bacula_db_pass') %>"
+<% end -%>
+}
+
+# Reasonable message delivery -- send most everything to email address
+#  and to the console
+Messages {
+  Name = Standard
+#
+# NOTE! If you send to two email or more email addresses, you will need
+#  to replace the %r in the from field (-f part) with a single valid
+#  email address in both the mailcommand and the operatorcommand.
+#  What this does is, it sets the email address that emails would display
+#  in the FROM field, which is by default the same email as they're being
+#  sent to.  However, if you send email to more than one address, then
+#  you'll have to set the FROM address manually, to a single address. 
+#  for example, a 'no-reply@mydomain.com', is better since that tends to
+#  tell (most) people that its coming from an automated source.
+
+#
+  mailcommand = "/usr/sbin/bsmtp -h localhost -f \"<%= scope.lookupvar('bacula::server::mail_from') %>\" -s \"Bacula: %t %e of %c %l\" %r"
+  operatorcommand = "/usr/sbin/bsmtp -h localhost -f \"<%= scope.lookupvar('bacula::server::mail_from') %>\" -s \"Bacula: Intervention needed for %j\" %r"
+  mail = <%= scope.lookupvar('bacula::server::mail_to') %> = all, !skipped            
+  operator = <%= scope.lookupvar('bacula::server::mail_to') %> = mount
+  console = all, !skipped, !saved
+#
+# WARNING! the following will create a file that you must cycle from
+#          time to time as it will grow indefinitely. However, it will
+#          also keep all your messages if they scroll off the console.
+#
+  append = "/var/log/bacula/bacula.log" = all, !skipped
+  catalog = all
+}
+
+
+#
+# Message delivery for daemon messages (no job).
+Messages {
+  Name = Daemon
+  mailcommand = "/usr/sbin/bsmtp -h localhost -f \"<%= scope.lookupvar('bacula::server::mail_from') %>\" -s \"Bacula daemon message\" %r"
+  mail = <%= scope.lookupvar('bacula::server::mail_to') %> = all, !skipped            
+  console = all, !skipped, !saved
+  append = "/var/log/bacula/bacula.log" = all, !skipped
+}
+
+<% scope.lookupvar('bacula::server::pools').sort.each do |@pool,@pool_data| -%>
+# <%= @pool %> pool definition
+Pool {
+  Name = <%= @pool %>
+  Pool Type = <% if @pool_data['type'] %><%= pool_data['type'] %><% else %>Backup<% end %>
+  Recycle = yes                       # Bacula can automatically recycle Volumes
+  AutoPrune = yes                     # Prune expired volumes
+  Volume Retention = <% if @pool_data['volume_retention'] %><%= @pool_data['volume_retention'] %><% else %>365 days<% end %>
+<% if @pool_data['max_vol_bytes'] -%>
+  Maximum Volume Bytes = <%= @pool_data['max_vol_bytes'] %>
+<% end -%>
+<% if @pool_data['max_vols'] -%>
+  Maximum Volumes = <%= @pool_data['max_vols'] %>
+<% end -%>
+<% if @pool_data['next_pool'] -%>
+  NextPool = <%= @pool_data['next_pool'] %>
+<% end -%>
+<% if @pool_data['storage'] -%>
+  Storage = <%= @pool_data['storage'] %>
+<% end -%>
+}
+
+<% end -%>
+
+#
+# Restricted console used by tray-monitor to get the status of the director
+#
+Console {
+  Name = bacula-mon
+  Password = "<%= scope.lookupvar('bacula::server::bacula_mon_pass') %>"
+  CommandACL = status, .status
+}

@@ -1,0 +1,10 @@
+#
+# Bacula User Agent (or Console) Configuration File
+#
+
+Director {
+  Name = <%= scope.lookupvar('bacula::server::bacula_dir_name') %>
+  DIRport = <%= scope.lookupvar('bacula::server::bacula_dir_port') %>
+  address = <%= scope.lookupvar('bacula::server::bacula_dir_address') %>
+  Password = "<%= scope.lookupvar('bacula::server::bacula_dir_pass') %>"
+}

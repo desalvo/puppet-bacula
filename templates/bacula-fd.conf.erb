@@ -1,0 +1,43 @@
+#
+# Default  Bacula File Daemon Configuration file
+#
+#  For Bacula release 5.0.0 (26 January 2010) -- redhat 
+#
+# There is not much to change here except perhaps the
+# File daemon Name to
+#
+
+#
+# List Directors who are permitted to contact this File daemon
+#
+Director {
+  Name = <%= scope.lookupvar('bacula::client::bacula_dir_name') %>
+  Password = "<%= scope.lookupvar('bacula::client::bacula_fd_pass') %>"
+}
+
+#
+# Restricted Director, used by tray-monitor to get the
+#   status of the file daemon
+#
+Director {
+  Name = <%= scope.lookupvar('bacula::client::bacula_mon_name') %>
+  Password = "<%= scope.lookupvar('bacula::client::bacula_mon_pass') %>"
+  Monitor = yes
+}
+
+#
+# "Global" File daemon configuration specifications
+#
+FileDaemon {                          # this is me
+  Name = <%= scope.lookupvar('bacula::client::bacula_fd_name') %>
+  FDport = <%= scope.lookupvar('bacula::client::bacula_fd_port') %>                  # where we listen for the director
+  WorkingDirectory = /var/spool/bacula
+  Pid Directory = /var/run
+  Maximum Concurrent Jobs = <%= scope.lookupvar('bacula::client::max_concurrent_jobs') %>
+}
+
+# Send all messages except skipped files back to Director
+Messages {
+  Name = Standard
+  director = <%= scope.lookupvar('bacula::client::bacula_dir_name') %> = all, !skipped, !restored
+}
