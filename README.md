@@ -58,6 +58,16 @@ Parameters
 * **mail_from**: [optional] the from header of the mail notifications, default is '\(Bacula\) \<%r\>'
 * **mail_to**: [optional] the recipient of the mail notifications, default is root@localhost
 
+**Web interface (webacula) parameters**
+
+* **db_pass**: the bacula DB password
+* **db_user**: [optional] the bacula db user, deafult is bacula
+* **db_name**: [optional] the bacula db name, default is bacula
+* **db_host**: [optional] the bacula DB host, default is localhost
+* **sudo**: [optional] use sudo in contacting bacula services, default is false
+* **bacula_web_template**: custom template for webacula
+* **auth_user_file**: custom auth user file
+
 Hash definitions
 ----------------
 
