@@ -17,6 +17,9 @@ Parameters
 ----------
 
 **Client parameters**
+```
+class { bacula::client }
+```
 
 * **bacula_fd_pass**: the bacula FD (client service) password
 * **bacula_mon_pass**: the bacula Mon password
@@ -27,6 +30,9 @@ Parameters
 * **max_concurrent_jobs**: the maximum number of allowed concurrent jobs, default is 1
 
 **Server parameters**
+```
+class { bacula::server }
+```
 
 * **bacula_db_pass**: the bacula DB password
 * **bacula_dir_pass**: the bacula Director password
@@ -59,6 +65,9 @@ Parameters
 * **mail_to**: [optional] the recipient of the mail notifications, default is root@localhost
 
 **Web interface (webacula) parameters**
+```
+class { bacula::web }
+```
 
 * **db_pass**: the bacula DB password
 * **db_user**: [optional] the bacula db user, deafult is bacula
