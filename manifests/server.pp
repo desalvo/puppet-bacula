@@ -90,21 +90,18 @@ class bacula::server (
        # Install the database
        case $operatingsystem {
            fedora: {
-               class { 'mysql':
-                   old_root_password => $old_root_password,
-                   root_password => $root_password,
-               }
                class { 'mysql::server':
+                   root_password => $root_password,
+                   old_root_password => $old_root_password,
                    service_provider => systemd,
                    service_name => 'mariadb.service'
                }
            }
            default: {
-               class { 'mysql':
-                   old_root_password => $old_root_password,
+               class { 'mysql::server':
                    root_password => $root_password,
+                   old_root_password => $old_root_password,
                }
-               class { 'mysql::server': }
            }
        }
        mysql::db { $bacula_db_name:

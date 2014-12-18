@@ -306,6 +306,10 @@ Contributors
 Release Notes
 -------------
 
+**0.2.1**
+
+Fixes for mylsql::server
+
 **0.2.0**
 
 Added support for bacula server
