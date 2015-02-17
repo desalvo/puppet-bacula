@@ -3,31 +3,33 @@ class bacula::server (
    $bacula_dir_pass,
    $bacula_sd_pass,
    $bacula_mon_pass,
-   $bacula_dir_name     = 'bacula-dir',
-   $bacula_dir_port     = 9101,
-   $bacula_dir_address  = 'localhost',
-   $bacula_sd_name      = 'bacula-sd',
-   $bacula_sd_port      = 9103,
-   $bacula_mon_name     = 'bacula-mon',
-   $bacula_db_host      = '127.0.0.1',
-   $bacula_db_name      = 'bacula',
-   $bacula_db_user      = 'bacula',
-   $dbi_mysql           = true,
-   $dbi_postgresql      = false,
-   $root_db_pass        = undef,
-   $old_root_db_pass    = undef,
-   $catalog_job_def     = 'DefaultJob',
-   $bconsole_template   = $bacula::params::bconsole_tmpl,
-   $bacula_dir_template = $bacula::params::bacula_dir_tmpl,
-   $bacula_sd_template  = $bacula::params::bacula_sd_tmpl,
-   $job_defs            = undef,
-   $filesets            = {},
-   $clients             = {},
-   $storage             = {},
-   $pools               = {},
-   $max_concurrent_jobs = 1,
-   $mail_from           = '\(Bacula\) \<%r\>',
-   $mail_to             = 'root@localhost',
+   $bacula_dir_name      = 'bacula-dir',
+   $bacula_dir_port      = 9101,
+   $bacula_dir_address   = 'localhost',
+   $bacula_sd_name       = 'bacula-sd',
+   $bacula_sd_port       = 9103,
+   $bacula_mon_name      = 'bacula-mon',
+   $bacula_db_host       = '127.0.0.1',
+   $bacula_db_name       = 'bacula',
+   $bacula_db_user       = 'bacula',
+   $dbi_mysql            = true,
+   $dbi_postgresql       = false,
+   $root_db_pass         = undef,
+   $old_root_db_pass     = undef,
+   $catalog_job_def      = 'DefaultJob',
+   $bconsole_template    = $bacula::params::bconsole_tmpl,
+   $bacula_dir_template  = $bacula::params::bacula_dir_tmpl,
+   $bacula_sd_template   = $bacula::params::bacula_sd_tmpl,
+   $job_defs             = undef,
+   $filesets             = {},
+   $clients              = {},
+   $storage              = {},
+   $pools                = {},
+   $max_concurrent_jobs  = 1,
+   $mail_from            = '\(Bacula\) \<%r\>',
+   $mail_to              = 'root@localhost',
+   $db_install           = True,
+   $mysql_server_options = {},
 ) inherits bacula::params {
 
    package { $bacula::params::bacula_server_pkgs: ensure => latest }
@@ -87,28 +89,31 @@ class bacula::server (
    }
 
    if ($bacula_db_host == $hostname or $bacula_db_host == $ipaddress or $bacula_db_host == '127.0.0.1' or $bacula_db_host == 'localhost') {
-       # Install the database
-       case $operatingsystem {
-           fedora: {
-               class { 'mysql::server':
-                   root_password => $root_password,
-                   old_root_password => $old_root_password,
-                   service_provider => systemd,
-                   service_name => 'mariadb.service'
+       if ($db_install) {
+           # Install the database
+           case $operatingsystem {
+               fedora: {
+                   class { 'mysql::server':
+                       root_password => $root_password,
+                       old_root_password => $old_root_password,
+                       service_provider => systemd,
+                       service_name => 'mariadb.service',
+                       override_options => $mysql_server_options,
+                   }
+               }
+               default: {
+                   class { 'mysql::server':
+                       root_password => $root_password,
+                       old_root_password => $old_root_password,
+                   }
                }
            }
-           default: {
-               class { 'mysql::server':
-                   root_password => $root_password,
-                   old_root_password => $old_root_password,
-               }
+           mysql::db { $bacula_db_name:
+               user     => $bacula_db_user,
+               password => $bacula_db_pass,
+               charset  => 'latin1',
+               notify   => Exec["bacula-mysql-db-create"]
            }
-       }
-       mysql::db { $bacula_db_name:
-           user     => $bacula_db_user,
-           password => $bacula_db_pass,
-           charset  => 'latin1',
-           notify   => Exec["bacula-mysql-db-create"]
        }
    }
 

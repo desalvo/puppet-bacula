@@ -63,6 +63,8 @@ class { bacula::server }
 * **max_concurrent_jobs**: [optional] the maximum number of allowed concurrent jobs, default is 1
 * **mail_from**: [optional] the from header of the mail notifications, default is '\(Bacula\) \<%r\>'
 * **mail_to**: [optional] the recipient of the mail notifications, default is root@localhost
+* **db_install**: controls the installation of the DB if the db host is localhost, defaults to True
+* **mysql_server_options**: [optional] optional hash of parameters for mysql
 
 **Web interface (webacula) parameters**
 ```
@@ -308,7 +310,7 @@ Release Notes
 
 **0.2.1**
 
-Fixes for mylsql::server
+New parameters to control mysql
 
 **0.2.0**
 
