@@ -308,6 +308,10 @@ Contributors
 Release Notes
 -------------
 
+**0.2.2**
+
+Fix requirements in metadata
+
 **0.2.1**
 
 New parameters to control mysql

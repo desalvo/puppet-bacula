@@ -1,0 +1,20 @@
+{
+  "name": "desalvo-bacula",
+  "version": "0.2.2",
+  "author": "desalvo",
+  "summary": "Puppet module for bacula",
+  "license": "Apache License, Version 2.0",
+  "source": "https://github.com/desalvo/puppet-bacula",
+  "types": [
+  
+  ],
+  "project_page": "https://github.com/desalvo/puppet-bacula",
+  "description": "Puppet module for bacula configuration",
+  "issues_url": "https://github.com/desalvo/puppet-bacula/issues",
+  "dependencies": [
+    {"version_requirement":">= 0.10.0","name":"puppetlabs/apache"},
+    {"version_requirement":">= 0.9.0","name":"puppetlabs/mysql"},
+    {"version_requirement":">= 0.10.0","name":"puppetlabs/apache"},
+    {"version_requirement":">= 0.9.0","name":"puppetlabs/mysql"}
+  ]
+}
