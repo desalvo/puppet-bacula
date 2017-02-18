@@ -308,6 +308,10 @@ Contributors
 Release Notes
 -------------
 
+**1.0.0**
+
+Puppet 4 support
+
 **0.2.2**
 
 Fix requirements in metadata

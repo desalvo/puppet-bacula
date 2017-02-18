@@ -16,9 +16,9 @@ class bacula::client (
    }
 
    file { $bacula::params::bacula_fd_path:
-      owner   => root,
-      group   => root,
-      mode    => 640,
+      owner   => 'root',
+      group   => 'root',
+      mode    => '0640',
       require => Package[$bacula::params::bacula_client_pkgs],
       content => template($bacula::params::bacula_fd_tmpl),
       notify  => Service[$bacula::params::bacula_client_service]

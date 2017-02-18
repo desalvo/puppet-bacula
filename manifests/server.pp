@@ -35,17 +35,17 @@ class bacula::server (
    package { $bacula::params::bacula_server_pkgs: ensure => latest }
 
    file { $bacula::params::bconsole_path:
-        owner   => root,
-        group   => root,
-        mode    => 644,
+        owner   => 'root',
+        group   => 'root',
+        mode    => '0644',
         content => template($bconsole_template),
         require => Package[$bacula::params::bacula_server_pkgs],
    }
 
    file { $bacula::params::bacula_dir_path:
-        owner   => root,
-        group   => root,
-        mode    => 644,
+        owner   => 'root',
+        group   => 'root',
+        mode    => '0644',
         content => template($bacula_dir_template),
         #require => [Package["bacula-director"],Exec["bacula-mysql-db-populate"]],
         require => Package[$bacula::params::bacula_server_pkgs],
@@ -53,9 +53,9 @@ class bacula::server (
    }
 
    file { $bacula::params::bacula_sd_path:
-       owner   => root,
-       group   => root,
-       mode    => 640,
+       owner   => 'root',
+       group   => 'root',
+       mode    => '0640',
        content => template($bacula_sd_template),
        require => Package[$bacula::params::bacula_server_pkgs],
        notify  => Service[$bacula::params::bacula_sd_service]
@@ -129,7 +129,7 @@ class bacula::server (
    file { $bacula::params::bacula_mysql_grant:
         owner   => 'root',
         group   => 'root',
-        mode    => 0755,
+        mode    => '0755',
         source  => 'puppet:///modules/bacula/grant_mysql_privileges',
         require => Package[$bacula::params::bacula_server_pkgs]
    }
